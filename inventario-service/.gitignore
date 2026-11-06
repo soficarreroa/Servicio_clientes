@@ -1,0 +1,36 @@
+# Compilados
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.project
+.classpath
+
+# Logs
+*.log
+hs_err_pid*
+replay_pid*
+
+# Sistema
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+
+# Otros
+HELP.md
