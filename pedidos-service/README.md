@@ -48,7 +48,7 @@ set "DB_PASSWORD=tu_clave"
 
 ## Cómo ejecutar el servicio
 1. Tener MySQL corriendo (puerto 3306) y las credenciales configuradas.
-2. Tener el ESB corriendo (puerto 8280) con las rutas hacia clientes (8081) e inventarios (8082).
+2. Tener el ESB corriendo (puerto 8280) con las rutas hacia clientes (8081) e inventarios (8082). Mientras no esté el ESB definitivo (WSO2 o Camel), se puede usar el ESB local de esta carpeta (ver más abajo).
 3. Ejecutar:
 ```bash
 mvn spring-boot:run
@@ -212,6 +212,23 @@ De la respuesta de inventarios, pedidos solo usa `todoDisponible` y, por cada pr
 - Los errores nunca muestran detalles internos del sistema (como fallos de la base de datos). El detalle solo queda en el log.
 - El servicio no genera facturas, no envía notificaciones ni descuenta stock.
 
+## Probar la comunicación completa con el ESB local
+`herramientas/EsbLocal.java` es un ESB mínimo **solo para pruebas locales** (no reemplaza a WSO2 ni a Camel). Recibe en el puerto 8280, enruta según la ruta a cada servicio, devuelve la respuesta tal cual y muestra en consola cada paso. No necesita Maven ni dependencias, solo Java 17+:
+```bash
+java herramientas/EsbLocal.java
+```
+| Ruta | Puerto de destino |
+|---|---|
+| `/api/clientes/**` | 8081 |
+| `/api/inventario/**` | 8082 |
+| `/api/pedidos/**` | 8083 |
+| `/api/facturas/**` | 8084 |
+| `/api/notificaciones/**` | 8085 |
+
+Si el servicio de destino no responde, el ESB local contesta 503 (como lo haría el ESB real), y pedidos lo traduce en su propio 503 sin guardar el pedido.
+
+Orden para probar todo junto (cada uno en su propia terminal): MySQL, clientes (8081, rama `main`), inventarios (8082, rama `inventarios`), pedidos (8083), `EsbLocal` (8280) y al final `pruebas_pedidos.bat`. Este ESB local no envía el pedido a facturación ni a notificaciones: eso queda para el ESB definitivo.
+
 ## Pruebas
 - Ejecutar todas: `mvn test` (**no necesitan MySQL ni el ESB**: usan H2 en memoria y simulan al ESB).
 - Pruebas de integración manuales (PP-01 a PP-13), con el servicio, el ESB, clientes e inventarios corriendo: ejecutar `pruebas_pedidos.bat` (Windows). Muestra cada prueba con su código HTTP.
@@ -258,7 +275,10 @@ pedidos-service/
 ├── pom.xml
 ├── README.md
 ├── .gitignore
+├── .gitattributes                           (Mantiene los saltos de línea de Windows en el .bat)
 ├── pruebas_pedidos.bat                      (Ejecuta PP-01 a PP-13 con curl)
+├── herramientas
+│   └── EsbLocal.java                        (ESB mínimo para pruebas locales, puerto 8280)
 └── src
     ├── main
     │   ├── java/com/empresa/pedidos

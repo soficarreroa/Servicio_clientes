@@ -3,6 +3,7 @@ chcp 65001 >nul
 rem ---------------------------------------------------------------------------
 rem Requisitos antes de ejecutar:
 rem   - Corriendo: pedidos (8083), ESB (8280), clientes (8081) e inventarios (8082).
+rem     (ESB de pruebas: java herramientas/EsbLocal.java)
 rem   - La base db_pedidos vacia (PP-11 consulta el pedido con id 1).
 rem   - Existe el cliente con id 1 (registrarlo antes en clientes).
 rem   - Inventarios con los 5 productos de ejemplo (data.sql de inventarios).
