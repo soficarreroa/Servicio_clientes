@@ -67,6 +67,46 @@ public class InventarioService {
         return new VerificacionResponse(todo, resultado);
     }
 
+    /**
+     * Registra un nuevo producto en el catálogo de inventario.
+     */
+    @Transactional
+    public ProductoResponse crearProducto(ProductoRequest solicitud) {
+        String cod = solicitud.codigo().trim().toUpperCase();
+        if (repositorio.existsByCodigo(cod)) {
+            throw new com.empresa.inventario.exception.ProductoDuplicadoException(cod);
+        }
+        Producto p = new Producto();
+        p.setCodigo(cod);
+        p.setNombre(solicitud.nombre().trim());
+        p.setDescripcion(solicitud.descripcion());
+        p.setPrecio(solicitud.precio());
+        p.setStock(solicitud.stock());
+        p.setActivo(solicitud.activo() != null ? solicitud.activo() : true);
+        return ProductoResponse.desde(repositorio.save(p));
+    }
+
+    /**
+     * Descuenta del stock las unidades enviadas tras confirmarse un pedido.
+     */
+    @Transactional
+    public List<ProductoResponse> descontarStock(VerificacionRequest solicitud) {
+        List<ProductoResponse> actualizados = new ArrayList<>();
+        if (solicitud == null || solicitud.items() == null) {
+            return actualizados;
+        }
+        for (ItemSolicitud item : solicitud.items()) {
+            if (item.productoId() != null && item.cantidad() != null && item.cantidad() > 0) {
+                repositorio.findById(item.productoId()).ifPresent(p -> {
+                    int nuevoStock = Math.max(0, p.getStock() - item.cantidad());
+                    p.setStock(nuevoStock);
+                    actualizados.add(ProductoResponse.desde(repositorio.save(p)));
+                });
+            }
+        }
+        return actualizados;
+    }
+
     // ----------------- metodos privados -----------------
 
     private Producto buscar(Long id) {

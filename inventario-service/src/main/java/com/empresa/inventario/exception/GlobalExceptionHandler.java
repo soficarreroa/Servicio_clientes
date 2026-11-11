@@ -28,6 +28,11 @@ public class GlobalExceptionHandler {
         return construir(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(ProductoDuplicadoException.class)
+    public ResponseEntity<ErrorResponse> duplicado(ProductoDuplicadoException ex) {
+        return construir(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(CantidadInvalidaException.class)
     public ResponseEntity<ErrorResponse> cantidadInvalida(CantidadInvalidaException ex) {
         return construir(HttpStatus.BAD_REQUEST, ex.getMessage());

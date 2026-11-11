@@ -31,6 +31,10 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+query
+
+# Variables de entorno sensibles (usar .env.example como plantilla)
+.env
 
 # Otros
 HELP.md

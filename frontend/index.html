@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enterprise Integration Dashboard | ESB :8280</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            --card-radius: 12px;
+        }
+        body {
+            background-color: #f4f6f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #333;
+        }
+        .navbar-custom {
+            background: #1e293b;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        }
+        .nav-tabs .nav-link {
+            font-weight: 500;
+            color: #64748b;
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 12px 20px;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background: transparent;
+        }
+        .card-custom {
+            border: none;
+            border-radius: var(--card-radius);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: #fff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card {
+            border-left: 4px solid #0d6efd;
+        }
+        .stat-card.stat-green { border-left-color: #198754; }
+        .stat-card.stat-purple { border-left-color: #6f42c1; }
+        .stat-card.stat-orange { border-left-color: #fd7e14; }
+        .table-hover tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        .badge-status {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .badge-confirmed { background-color: #d1e7dd; color: #0f5132; }
+        .badge-rejected { background-color: #f8d7da; color: #842029; }
+        .badge-invoice { background-color: #cff4fc; color: #055160; }
+        .badge-notification { background-color: #e2d9f3; color: #432874; }
+        .price-tag {
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA SUPERIOR DE NAVEGACIÓN -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-2">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="bi bi-diagram-3-fill text-primary fs-4"></i>
+                <div>
+                    <span class="fw-bold tracking-wide">ENTERPRISE ESB DASHBOARD</span>
+                    <span class="badge bg-secondary ms-2 small">Entregable Villa</span>
+                </div>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <div class="input-group input-group-sm" style="max-width: 320px;">
+                    <span class="input-group-text bg-dark text-white-50 border-secondary"><i class="bi bi-router"></i> ESB URL:</span>
+                    <input type="text" id="esbBaseUrl" class="form-control bg-dark text-white border-secondary" value="http://localhost:8280">
+                </div>
+                <button class="btn btn-sm btn-outline-light d-flex align-items-center gap-1" onclick="verificarEstadoEsb()">
+                    <span id="esbIndicator" class="spinner-grow spinner-grow-sm text-warning" role="status"></span>
+                    <span id="esbStatusText">Verificar ESB</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="container-fluid px-4 py-4">
+
+        <!-- RESUMEN DE INDICADORES / METRICAS -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card card-custom p-3 stat-card">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Clientes (:8081)</span>
+                            <h3 class="mb-0 fw-bold mt-1" id="statClientes">-</h3>
+                        </div>
+                        <i class="bi bi-people fs-1 text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom p-3 stat-card stat-green">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Productos (:8082)</span>
+                            <h3 class="mb-0 fw-bold mt-1" id="statProductos">-</h3>
+                        </div>
+                        <i class="bi bi-boxes fs-1 text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom p-3 stat-card stat-purple">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Facturas (:8084)</span>
+                            <h3 class="mb-0 fw-bold mt-1" id="statFacturas">-</h3>
+                        </div>
+                        <i class="bi bi-receipt-cutoff fs-1 text-purple opacity-50" style="color: #6f42c1;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom p-3 stat-card stat-orange">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold">Notificaciones (:8085)</span>
+                            <h3 class="mb-0 fw-bold mt-1" id="statNotificaciones">-</h3>
+                        </div>
+                        <i class="bi bi-bell-fill fs-1 text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NOTIFICACIONES Y ALERTAS DINÁMICAS -->
+        <div id="alertContainer"></div>
+
+        <!-- PESTAÑAS DE NAVEGACIÓN DE MÓDULOS -->
+        <ul class="nav nav-tabs mb-4" id="moduleTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active d-flex align-items-center gap-2" id="tab-pedidos" data-bs-toggle="tab" data-bs-target="#content-pedidos" type="button" role="tab">
+                    <i class="bi bi-cart-plus-fill"></i> 1. Creación de Pedidos
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-panel" data-bs-toggle="tab" data-bs-target="#content-panel" type="button" role="tab">
+                    <i class="bi bi-file-earmark-medical-fill"></i> 2. Facturas y Notificaciones
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-clientes" data-bs-toggle="tab" data-bs-target="#content-clientes" type="button" role="tab">
+                    <i class="bi bi-person-lines-fill"></i> 3. Clientes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link d-flex align-items-center gap-2" id="tab-inventario" data-bs-toggle="tab" data-bs-target="#content-inventario" type="button" role="tab">
+                    <i class="bi bi-box-seam-fill"></i> 4. Inventario
+                </button>
+            </li>
+        </ul>
+
+        <!-- CONTENIDO DE LAS PESTAÑAS -->
+        <div class="tab-content" id="moduleTabsContent">
+
+            <!-- ========================================== -->
+            <!-- MÓDULO 1: CREACIÓN DE PEDIDOS              -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade show active" id="content-pedidos" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Formulario de Pedido -->
+                    <div class="col-lg-5">
+                        <div class="card card-custom p-4">
+                            <h5 class="card-title fw-bold text-primary mb-3">
+                                <i class="bi bi-bag-check-fill me-2"></i>Armar Nuevo Pedido
+                            </h5>
+                            <p class="text-muted small mb-3">
+                                Seleccione el cliente y añada productos. El pedido se enviará a través del ESB (:8280) que coordinará validación, factura y notificación.
+                            </p>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Cliente Solicitante *</label>
+                                <select id="pedidoClienteSelect" class="form-select">
+                                    <option value="">Cargando clientes...</option>
+                                </select>
+                            </div>
+
+                            <div class="card bg-light border-0 p-3 mb-3">
+                                <h6 class="fw-bold mb-2 small text-uppercase text-secondary">Añadir Producto al Carrito</h6>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-7">
+                                        <label class="form-label small">Producto</label>
+                                        <select id="pedidoProductoSelect" class="form-select form-select-sm">
+                                            <option value="">Cargando catálogo...</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-3">
+                                        <label class="form-label small">Cantidad</label>
+                                        <input type="number" id="pedidoCantidadInput" class="form-control form-control-sm" min="1" value="1">
+                                    </div>
+                                    <div class="col-2">
+                                        <button class="btn btn-sm btn-primary w-100" onclick="agregarItemPedido()" title="Añadir item">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tabla del carrito -->
+                            <div class="table-responsive mb-3" style="max-height: 220px;">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-light">
+                                        <tr class="small">
+                                            <th>Producto</th>
+                                            <th class="text-center">Cant</th>
+                                            <th class="text-end">P. Unitario</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pedidoItemsTableBody">
+                                        <tr><td colspan="5" class="text-center text-muted small py-3">No hay productos en el pedido</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4 p-2 bg-light rounded">
+                                <span class="fw-bold">Total Estimado:</span>
+                                <span class="fs-5 fw-bold text-success" id="pedidoTotalEstimado">$0.00</span>
+                            </div>
+
+                            <button id="btnEnviarPedido" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2" onclick="enviarPedidoAlEsb()">
+                                <i class="bi bi-send-fill"></i> Procesar Pedido vía ESB
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Resultado Inmediato y Flujo ESB -->
+                    <div class="col-lg-7">
+                        <div class="card card-custom p-4 h-100">
+                            <h5 class="card-title fw-bold text-dark mb-3">
+                                <i class="bi bi-activity me-2"></i>Monitoreo del Flujo de Orquestación
+                            </h5>
+                            
+                            <div id="resultadoPedidoCard" class="card border-0 p-4 mb-4" style="display: none;">
+                                <!-- Se llena dinámicamente con JS tras enviar el pedido -->
+                            </div>
+
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="fw-bold mb-2"><i class="bi bi-info-circle-fill text-primary me-2"></i>Flujo Enterprise Ejecutado por el ESB (:8280)</h6>
+                                <ol class="small text-muted mb-0 ps-3">
+                                    <li class="mb-1"><strong>Frontend</strong> envía <code>POST /api/pedidos</code> al <strong>ESB (:8280)</strong>.</li>
+                                    <li class="mb-1"><strong>ESB</strong> enruta a <strong>Pedidos (:8083)</strong>.</li>
+                                    <li class="mb-1"><strong>Pedidos</strong> consulta Cliente (:8081) e Inventario (:8082) a través del ESB.</li>
+                                    <li class="mb-1">Si hay stock disponible:
+                                        <span class="badge bg-success">CONFIRMADO</span>
+                                        El ESB dispara <strong>Facturación (:8084)</strong> para generar la factura y <strong>Notificaciones (:8085)</strong> con confirmación y factura.
+                                    </li>
+                                    <li class="mb-0">Si no hay stock suficiente:
+                                        <span class="badge bg-danger">RECHAZADO</span>
+                                        El ESB solo dispara <strong>Notificaciones (:8085)</strong> detallando el motivo del rechazo.
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold text-secondary mb-0">Historial Reciente de Pedidos</h6>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="cargarPedidos()"><i class="bi bi-arrow-clockwise"></i> Refrescar</button>
+                                </div>
+                                <div class="table-responsive" style="max-height: 220px;">
+                                    <table class="table table-sm table-hover align-middle">
+                                        <thead class="table-light small">
+                                            <tr>
+                                                <th># ID</th>
+                                                <th>Cliente</th>
+                                                <th>Estado</th>
+                                                <th>Motivo / Detalle</th>
+                                                <th>Items</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="pedidosTableBody">
+                                            <tr><td colspan="5" class="text-center text-muted small py-3">Cargando pedidos...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MÓDULO 2: PANEL DE FACTURAS Y NOTIFICAC.   -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="content-panel" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Tabla de Facturas -->
+                    <div class="col-lg-6">
+                        <div class="card card-custom p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-purple mb-0" style="color: #6f42c1;">
+                                        <i class="bi bi-receipt me-2"></i>Facturas Emitidas (:8084)
+                                    </h5>
+                                    <span class="text-muted small">Generadas automáticamente para pedidos CONFIRMADOS</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-purple" style="color: #6f42c1; border-color: #6f42c1;" onclick="cargarFacturas()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refrescar
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th>Factura #</th>
+                                            <th>Pedido #</th>
+                                            <th>Cliente</th>
+                                            <th>Monto Total</th>
+                                            <th>Fecha Emisión</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="facturasTableBody">
+                                        <tr><td colspan="6" class="text-center text-muted small py-3">Cargando facturas...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bitácora de Notificaciones -->
+                    <div class="col-lg-6">
+                        <div class="card card-custom p-4 h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="fw-bold text-warning mb-0" style="color: #d97706 !important;">
+                                        <i class="bi bi-bell-fill me-2"></i>Bitácora de Notificaciones (:8085)
+                                    </h5>
+                                    <span class="text-muted small">Eventos de confirmación y rechazo enviados al cliente</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-warning" onclick="cargarNotificaciones()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refrescar
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th>Tracking</th>
+                                            <th>Tipo</th>
+                                            <th>Destinatario</th>
+                                            <th>Mensaje</th>
+                                            <th>Fecha</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="notificacionesTableBody">
+                                        <tr><td colspan="5" class="text-center text-muted small py-3">Cargando notificaciones...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MÓDULO 3: GESTIÓN DE CLIENTES              -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="content-clientes" role="tabpanel">
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="card card-custom p-4">
+                            <h5 class="card-title fw-bold text-primary mb-3">
+                                <i class="bi bi-person-plus-fill me-2"></i>Registrar Nuevo Cliente
+                            </h5>
+                            <form id="formCliente" onsubmit="registrarCliente(event)">
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Documento *</label>
+                                    <input type="text" id="cliDocumento" class="form-control form-control-sm" required placeholder="Ej. 1020304050">
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Nombre *</label>
+                                        <input type="text" id="cliNombre" class="form-control form-control-sm" required placeholder="Laura">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Apellido *</label>
+                                        <input type="text" id="cliApellido" class="form-control form-control-sm" required placeholder="Gómez">
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Correo Electrónico *</label>
+                                    <input type="email" id="cliEmail" class="form-control form-control-sm" required placeholder="laura@correo.com">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Teléfono</label>
+                                    <input type="text" id="cliTelefono" class="form-control form-control-sm" placeholder="3001234567">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-semibold">Dirección</label>
+                                    <input type="text" id="cliDireccion" class="form-control form-control-sm" placeholder="Calle 10 # 5-20, Bogotá">
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                                    <i class="bi bi-save"></i> Guardar Cliente vía ESB
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-8">
+                        <div class="card card-custom p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="card-title fw-bold text-dark mb-0">
+                                    <i class="bi bi-people-fill me-2 text-primary"></i>Clientes Registrados
+                                </h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="cargarClientes()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refrescar
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Documento</th>
+                                            <th>Nombre Completo</th>
+                                            <th>Email</th>
+                                            <th>Teléfono</th>
+                                            <th>Dirección</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="clientesTableBody">
+                                        <tr><td colspan="6" class="text-center text-muted small py-3">Cargando clientes...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- MÓDULO 4: INVENTARIO DE PRODUCTOS          -->
+            <!-- ========================================== -->
+            <div class="tab-pane fade" id="content-inventario" role="tabpanel">
+                <div class="row g-4">
+                    <!-- Formulario de Registro de Producto -->
+                    <div class="col-lg-4">
+                        <div class="card card-custom p-4">
+                            <h5 class="card-title fw-bold text-success mb-3">
+                                <i class="bi bi-plus-square-fill me-2"></i>Registrar Nuevo Producto
+                            </h5>
+                            <form id="formProducto" onsubmit="registrarProducto(event)">
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Código *</label>
+                                    <input type="text" id="prdCodigo" class="form-control form-control-sm text-uppercase" required placeholder="Ej. PRD-006">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Nombre del Producto *</label>
+                                    <input type="text" id="prdNombre" class="form-control form-control-sm" required placeholder="Ej. Impresora Láser">
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label small fw-semibold">Descripción</label>
+                                    <input type="text" id="prdDescripcion" class="form-control form-control-sm" placeholder="Ej. Multifuncional WiFi con escáner">
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Precio (COP) *</label>
+                                        <input type="number" id="prdPrecio" class="form-control form-control-sm" step="0.01" min="1" required placeholder="350000">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Stock Inicial *</label>
+                                        <input type="number" id="prdStock" class="form-control form-control-sm" min="0" required value="10">
+                                    </div>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="prdActivo" checked>
+                                    <label class="form-check-label small" for="prdActivo">Producto activo para la venta</label>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100 py-2 fw-semibold">
+                                    <i class="bi bi-save"></i> Guardar Producto vía ESB
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Productos y Existencias -->
+                    <div class="col-lg-8">
+                        <div class="card card-custom p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <h5 class="card-title fw-bold text-dark mb-0">
+                                        <i class="bi bi-boxes text-success me-2"></i>Catálogo de Productos y Existencias (:8082)
+                                    </h5>
+                                    <span class="text-muted small">Consulta en tiempo real de disponibilidad y stock de almacén</span>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="cargarProductos()">
+                                    <i class="bi bi-arrow-clockwise"></i> Refrescar
+                                </button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Código</th>
+                                            <th>Nombre del Producto</th>
+                                            <th class="text-end">Precio Unitario</th>
+                                            <th class="text-center">Stock Actual</th>
+                                            <th class="text-center">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productosTableBody">
+                                        <tr><td colspan="6" class="text-center text-muted small py-3">Cargando inventario...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- SCRIPT DE APLICACIÓN SINGLE PAGE (SPA) -->
+    <script>
+        // Estado local de la aplicación
+        let catalogoProductos = [];
+        let listaClientes = [];
+        let carritoItems = [];
+
+        function getEsbUrl() {
+            let url = document.getElementById('esbBaseUrl').value.trim();
+            if (url.endsWith('/')) url = url.slice(0, -1);
+            try { localStorage.setItem('esb_url', url); } catch (e) {}
+            return url;
+        }
+
+        // Formateador de moneda en pesos colombianos (COP)
+        const formatearMoneda = (valor) => {
+            return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(valor);
+        };
+
+        // Mostrar Alertas flotantes
+        function mostrarAlerta(mensaje, tipo = 'info') {
+            const cont = document.getElementById('alertContainer');
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show shadow-sm`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi ${tipo === 'danger' ? 'bi-exclamation-triangle-fill' : (tipo === 'success' ? 'bi-check-circle-fill' : 'bi-info-circle-fill')}"></i>
+                    <div>${mensaje}</div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+            cont.appendChild(alertDiv);
+            setTimeout(() => {
+                if (alertDiv && alertDiv.parentElement) {
+                    alertDiv.classList.remove('show');
+                    setTimeout(() => alertDiv.remove(), 200);
+                }
+            }, 6000);
+        }
+
+        // 1. VERIFICAR SALUD DEL ESB
+        async function verificarEstadoEsb() {
+            const ind = document.getElementById('esbIndicator');
+            const txt = document.getElementById('esbStatusText');
+            ind.className = 'spinner-grow spinner-grow-sm text-warning';
+            txt.innerText = 'Verificando...';
+
+            try {
+                // Hacemos una consulta ligera a clientes a través del ESB
+                const res = await fetch(`${getEsbUrl()}/api/clientes`, { signal: AbortSignal.timeout(3000) });
+                if (res.ok) {
+                    ind.className = 'spinner-grow spinner-grow-sm text-success';
+                    txt.innerText = 'ESB Activo (:8280)';
+                } else {
+                    ind.className = 'spinner-grow spinner-grow-sm text-danger';
+                    txt.innerText = 'ESB con error (' + res.status + ')';
+                }
+            } catch (err) {
+                ind.className = 'spinner-grow spinner-grow-sm text-danger';
+                txt.innerText = 'ESB no responde';
+            }
+        }
+
+        // 2. MÓDULO CLIENTES
+        async function cargarClientes() {
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/clientes`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                listaClientes = await res.json();
+                document.getElementById('statClientes').innerText = listaClientes.length;
+
+                const tbody = document.getElementById('clientesTableBody');
+                const select = document.getElementById('pedidoClienteSelect');
+
+                if (listaClientes.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">No hay clientes registrados aún.</td></tr>';
+                    select.innerHTML = '<option value="">No hay clientes (cree uno)</option>';
+                    return;
+                }
+
+                tbody.innerHTML = listaClientes.map(c => `
+                    <tr>
+                        <td class="fw-bold">${c.id}</td>
+                        <td>${c.documento}</td>
+                        <td>${c.nombre} ${c.apellido}</td>
+                        <td>${c.email}</td>
+                        <td>${c.telefono || '-'}</td>
+                        <td>${c.direccion || '-'}</td>
+                    </tr>
+                `).join('');
+
+                select.innerHTML = '<option value="">-- Seleccione un cliente --</option>' +
+                    listaClientes.map(c => `<option value="${c.id}">${c.id} - ${c.nombre} ${c.apellido} (${c.email})</option>`).join('');
+
+            } catch (e) {
+                document.getElementById('clientesTableBody').innerHTML = 
+                    `<tr><td colspan="6" class="text-center text-danger small py-3"><i class="bi bi-x-circle"></i> Error al consultar clientes: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function registrarCliente(e) {
+            e.preventDefault();
+            const cliente = {
+                documento: document.getElementById('cliDocumento').value.trim(),
+                nombre: document.getElementById('cliNombre').value.trim(),
+                apellido: document.getElementById('cliApellido').value.trim(),
+                email: document.getElementById('cliEmail').value.trim(),
+                telefono: document.getElementById('cliTelefono').value.trim(),
+                direccion: document.getElementById('cliDireccion').value.trim()
+            };
+
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/clientes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cliente)
+                });
+                const data = await res.json();
+                if (res.status === 201) {
+                    mostrarAlerta(`Cliente <strong>${data.nombre} ${data.apellido}</strong> registrado con ID #${data.id}`, 'success');
+                    document.getElementById('formCliente').reset();
+                    cargarClientes();
+                } else {
+                    mostrarAlerta(`Error al registrar cliente: ${data.message || data.error}`, 'danger');
+                }
+            } catch (err) {
+                mostrarAlerta('No se pudo conectar con el ESB al registrar cliente: ' + err.message, 'danger');
+            }
+        }
+
+        // 3. MÓDULO INVENTARIO
+        async function cargarProductos() {
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/inventario/productos`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                catalogoProductos = await res.json();
+                document.getElementById('statProductos').innerText = catalogoProductos.length;
+
+                const tbody = document.getElementById('productosTableBody');
+                const select = document.getElementById('pedidoProductoSelect');
+
+                if (catalogoProductos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">No hay productos en inventario.</td></tr>';
+                    select.innerHTML = '<option value="">Sin productos disponibles</option>';
+                    return;
+                }
+
+                tbody.innerHTML = catalogoProductos.map(p => {
+                    let stockBadge = p.stock > 10 ? 'bg-success' : (p.stock > 0 ? 'bg-warning text-dark' : 'bg-danger');
+                    let activoBadge = p.activo ? '<span class="badge bg-success-subtle text-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>';
+                    return `
+                        <tr>
+                            <td class="fw-bold">${p.id}</td>
+                            <td><code>${p.codigo}</code></td>
+                            <td>
+                                <div class="fw-semibold">${p.nombre}</div>
+                                ${p.descripcion ? `<div class="small text-muted">${p.descripcion}</div>` : ''}
+                            </td>
+                            <td class="text-end price-tag">${formatearMoneda(p.precio)}</td>
+                            <td class="text-center"><span class="badge ${stockBadge}">${p.stock} un.</span></td>
+                            <td class="text-center">${activoBadge}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                select.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+                    catalogoProductos.filter(p => p.activo).map(p => `
+                        <option value="${p.id}" data-precio="${p.precio}" data-stock="${p.stock}" data-nombre="${p.nombre}">
+                            ${p.nombre} (Stock: ${p.stock}) - ${formatearMoneda(p.precio)}
+                        </option>
+                    `).join('');
+
+            } catch (e) {
+                document.getElementById('productosTableBody').innerHTML = 
+                    `<tr><td colspan="6" class="text-center text-danger small py-3"><i class="bi bi-x-circle"></i> Error al consultar inventario: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function registrarProducto(e) {
+            e.preventDefault();
+            const producto = {
+                codigo: document.getElementById('prdCodigo').value.trim().toUpperCase(),
+                nombre: document.getElementById('prdNombre').value.trim(),
+                descripcion: document.getElementById('prdDescripcion').value.trim(),
+                precio: parseFloat(document.getElementById('prdPrecio').value),
+                stock: parseInt(document.getElementById('prdStock').value),
+                activo: document.getElementById('prdActivo').checked
+            };
+
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/inventario/productos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(producto)
+                });
+                const data = await res.json();
+                if (res.status === 201) {
+                    mostrarAlerta(`Producto <strong>${data.nombre}</strong> (${data.codigo}) registrado con éxito`, 'success');
+                    document.getElementById('formProducto').reset();
+                    document.getElementById('prdActivo').checked = true;
+                    document.getElementById('prdStock').value = 10;
+                    cargarProductos();
+                } else {
+                    mostrarAlerta(`Error al registrar producto: ${data.message || data.error}`, 'danger');
+                }
+            } catch (err) {
+                mostrarAlerta('No se pudo conectar con el ESB al registrar producto: ' + err.message, 'danger');
+            }
+        }
+
+        // 4. MÓDULO PEDIDOS
+        function agregarItemPedido() {
+            const sel = document.getElementById('pedidoProductoSelect');
+            const cantInput = document.getElementById('pedidoCantidadInput');
+            const productoId = parseInt(sel.value);
+            const cantidad = parseInt(cantInput.value);
+
+            if (!productoId || isNaN(productoId)) {
+                mostrarAlerta('Por favor seleccione un producto del catálogo', 'warning');
+                return;
+            }
+            if (!cantidad || cantidad < 1) {
+                mostrarAlerta('La cantidad debe ser mayor o igual a 1', 'warning');
+                return;
+            }
+
+            const opt = sel.options[sel.selectedIndex];
+            const nombre = opt.getAttribute('data-nombre');
+            const precio = parseFloat(opt.getAttribute('data-precio'));
+
+            const existente = carritoItems.find(it => it.productoId === productoId);
+            if (existente) {
+                existente.cantidad += cantidad;
+            } else {
+                carritoItems.push({ productoId, nombre, precio, cantidad });
+            }
+
+            cantInput.value = 1;
+            renderizarCarrito();
+        }
+
+        function eliminarItemPedido(productoId) {
+            carritoItems = carritoItems.filter(it => it.productoId !== productoId);
+            renderizarCarrito();
+        }
+
+        function renderizarCarrito() {
+            const tbody = document.getElementById('pedidoItemsTableBody');
+            if (carritoItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">No hay productos en el pedido</td></tr>';
+                document.getElementById('pedidoTotalEstimado').innerText = '$0.00';
+                return;
+            }
+
+            let total = 0;
+            tbody.innerHTML = carritoItems.map(it => {
+                const subtotal = it.precio * it.cantidad;
+                total += subtotal;
+                return `
+                    <tr class="small">
+                        <td>${it.nombre}</td>
+                        <td class="text-center">${it.cantidad}</td>
+                        <td class="text-end">${formatearMoneda(it.precio)}</td>
+                        <td class="text-end fw-semibold">${formatearMoneda(subtotal)}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm text-danger p-0" onclick="eliminarItemPedido(${it.productoId})" title="Quitar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('pedidoTotalEstimado').innerText = formatearMoneda(total);
+        }
+
+        async function enviarPedidoAlEsb() {
+            const clienteId = document.getElementById('pedidoClienteSelect').value;
+            if (!clienteId) {
+                mostrarAlerta('Seleccione un cliente para el pedido', 'warning');
+                return;
+            }
+            if (carritoItems.length === 0) {
+                mostrarAlerta('Añada al menos un producto al pedido', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btnEnviarPedido');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Orquestando con ESB...';
+
+            const payload = {
+                clienteId: parseInt(clienteId),
+                items: carritoItems.map(it => ({ productoId: it.productoId, cantidad: it.cantidad }))
+            };
+
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/pedidos`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const pedido = await res.json();
+
+                if (res.status === 201) {
+                    mostrarResultadoPedido(pedido);
+                    // Limpiar carrito
+                    carritoItems = [];
+                    renderizarCarrito();
+                    // Refrescar paneles y stock
+                    setTimeout(() => cargarProductos(), 400);
+                    setTimeout(() => {
+                        cargarPedidos();
+                        cargarFacturas();
+                        cargarNotificaciones();
+                        cargarProductos();
+                    }, 1200);
+                } else {
+                    mostrarAlerta(`Error en pedido (${res.status}): ${pedido.message || pedido.error}`, 'danger');
+                }
+            } catch (err) {
+                mostrarAlerta('Fallo al conectar con el ESB (:8280): ' + err.message, 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Procesar Pedido vía ESB';
+            }
+        }
+
+        function mostrarResultadoPedido(pedido) {
+            const card = document.getElementById('resultadoPedidoCard');
+            card.style.display = 'block';
+
+            if (pedido.estado === 'CONFIRMADO') {
+                card.className = 'card border-0 p-4 mb-4 bg-success-subtle text-success-emphasis border-start border-4 border-success';
+                card.innerHTML = `
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <i class="bi bi-check-circle-fill fs-2 text-success"></i>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-success">¡PEDIDO #${pedido.id} CONFIRMADO EXITOSAMENTE!</h5>
+                            <span class="small">El ESB verificó inventario y disparó Facturación y Notificaciones.</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 small">
+                        <strong>Cliente ID:</strong> #${pedido.clienteId} | 
+                        <strong>Fecha:</strong> ${pedido.fechaCreacion || new Date().toLocaleString()} | 
+                        <strong>Items:</strong> ${pedido.items ? pedido.items.length : 0} línea(s)
+                    </div>
+                    <div class="mt-2 pt-2 border-top border-success-subtle d-flex gap-2">
+                        <span class="badge bg-success">Factura Autogenerada en :8084</span>
+                        <span class="badge bg-primary">Notificación Enviada en :8085</span>
+                    </div>
+                `;
+            } else {
+                card.className = 'card border-0 p-4 mb-4 bg-danger-subtle text-danger-emphasis border-start border-4 border-danger';
+                card.innerHTML = `
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <i class="bi bi-x-circle-fill fs-2 text-danger"></i>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-danger">PEDIDO #${pedido.id} RECHAZADO</h5>
+                            <span class="small">El pedido no superó la verificación de existencias.</span>
+                        </div>
+                    </div>
+                    <div class="mt-2 small">
+                        <strong>Motivo del Rechazo:</strong> <em>${pedido.motivoRechazo || 'Stock insuficiente o producto inactivo'}</em>
+                    </div>
+                    <div class="mt-2 pt-2 border-top border-danger-subtle">
+                        <span class="badge bg-warning text-dark">Notificación de Rechazo Enviada al Cliente en :8085</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function cargarPedidos() {
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/pedidos`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const pedidos = await res.json();
+                const tbody = document.getElementById('pedidosTableBody');
+
+                if (pedidos.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">No hay pedidos registrados</td></tr>';
+                    return;
+                }
+
+                // Ordenar por id descendente
+                pedidos.sort((a,b) => b.id - a.id);
+
+                tbody.innerHTML = pedidos.map(p => {
+                    const badge = p.estado === 'CONFIRMADO' 
+                        ? '<span class="badge bg-success">CONFIRMADO</span>'
+                        : '<span class="badge bg-danger">RECHAZADO</span>';
+                    const itemsDesc = p.items ? p.items.map(it => `Prod #${it.productoId} (x${it.cantidad})`).join(', ') : '-';
+                    return `
+                        <tr class="small">
+                            <td class="fw-bold">#${p.id}</td>
+                            <td>Cliente #${p.clienteId}</td>
+                            <td>${badge}</td>
+                            <td class="text-muted">${p.motivoRechazo || '<span class="text-success">Aprobado y facturado</span>'}</td>
+                            <td>${itemsDesc}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                document.getElementById('pedidosTableBody').innerHTML = 
+                    `<tr><td colspan="5" class="text-center text-danger small py-3">Error al consultar pedidos: ${e.message}</td></tr>`;
+            }
+        }
+
+        // 5. MÓDULO FACTURAS
+        async function cargarFacturas() {
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/facturas`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const facturas = await res.json();
+                document.getElementById('statFacturas').innerText = facturas.length;
+                const tbody = document.getElementById('facturasTableBody');
+
+                if (facturas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted small py-3">No hay facturas generadas aún.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = facturas.map(f => `
+                    <tr class="small">
+                        <td class="fw-bold text-purple" style="color: #6f42c1;">FAC-${f.id}</td>
+                        <td><span class="badge bg-light text-dark border">Pedido #${f.pedidoId}</span></td>
+                        <td>Cliente #${f.clienteId}</td>
+                        <td class="fw-bold text-success price-tag">${formatearMoneda(f.montoTotal)}</td>
+                        <td class="text-muted">${new Date(f.fechaEmision).toLocaleString()}</td>
+                        <td><span class="badge bg-success-subtle text-success">${f.estado}</span></td>
+                    </tr>
+                `).join('');
+
+            } catch (e) {
+                document.getElementById('facturasTableBody').innerHTML = 
+                    `<tr><td colspan="6" class="text-center text-danger small py-3">Error al consultar facturas: ${e.message}</td></tr>`;
+            }
+        }
+
+        // 6. MÓDULO NOTIFICACIONES
+        async function cargarNotificaciones() {
+            try {
+                const res = await fetch(`${getEsbUrl()}/api/notificaciones`);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const notificaciones = await res.json();
+                document.getElementById('statNotificaciones').innerText = notificaciones.length;
+                const tbody = document.getElementById('notificacionesTableBody');
+
+                if (notificaciones.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted small py-3">No hay notificaciones en la bitácora aún.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = notificaciones.map(n => {
+                    const tipoBadge = n.tipo === 'PEDIDO_CONFIRMADO' 
+                        ? '<span class="badge bg-success-subtle text-success">CONFIRMACIÓN</span>'
+                        : '<span class="badge bg-danger-subtle text-danger">RECHAZO</span>';
+                    return `
+                        <tr class="small">
+                            <td><code>${n.codigoSeguimiento}</code></td>
+                            <td>${tipoBadge}</td>
+                            <td><strong>${n.email}</strong><br><span class="text-muted" style="font-size:0.75rem;">Cliente #${n.clienteId}</span></td>
+                            <td style="max-width: 250px;">${n.mensaje}</td>
+                            <td class="text-muted" style="font-size:0.75rem;">${new Date(n.fechaEnvio).toLocaleTimeString()}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (e) {
+                document.getElementById('notificacionesTableBody').innerHTML = 
+                    `<tr><td colspan="5" class="text-center text-danger small py-3">Error al consultar notificaciones: ${e.message}</td></tr>`;
+            }
+        }
+
+        // Inicializar datos al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                const guardado = localStorage.getItem('esb_url');
+                if (guardado) document.getElementById('esbBaseUrl').value = guardado;
+            } catch (e) {}
+            verificarEstadoEsb();
+            cargarClientes();
+            cargarProductos();
+            cargarPedidos();
+            cargarFacturas();
+            cargarNotificaciones();
+
+            // Intervalo suave de actualización de indicadores cada 15 seg
+            setInterval(() => {
+                cargarFacturas();
+                cargarNotificaciones();
+            }, 15000);
+        });
+    </script>
+</body>
+</html>
+
