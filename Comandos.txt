@@ -1,0 +1,17 @@
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+choco install Maven
+
+choco install temurin21 --force -y
+
+$jdk = Get-ChildItem "C:\Program Files\Eclipse Adoptium" -Directory -Filter "jdk-*" | Select-Object -First 1
+
+$env:JAVA_HOME = $jdk.FullName
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+
+mvn -versión
+
+DESDE LA RUTA DEL PROYECTO
+
+mvn clean install
+
